@@ -13,10 +13,29 @@
  */
 
 
+/*
+  Latest notes is that added collider and is making sure
+  that they work. Also update both the entity and its 
+  collider position. 
+  
+  Also need to make sure that the rate that the program
+  moves enemies is not frame dependent 
+  
+  
+  Update to the enemy movement to take in a custom
+  delta time. This is done with millis though so
+  it could be janky.
+  
+  Moved enemy logic to draw function as well instead
+  of serial update. 
+*/
+
 import processing.serial.*; // import the Processing serial library
 import java.util.*;
+import java.util.Random;
 
 Serial myPort;              // The serial port
+Random random;
 
 float fgcolor = 0;          // Fill color defaults to black
 Vector2 playerPos; 
@@ -33,6 +52,12 @@ float timer = 10000; // Every 10 seconds spawn
 boolean hasSpawned = false;
 
 List<Enemy> enemies; 
+float enemySpeed = 2.0f;
+
+
+// Time 
+float delta;
+float lastTime;
 
 
 boolean contact = false;    // Whether you've heard from the microcontroller
@@ -45,6 +70,9 @@ void setup() {
   
   String portName = Serial.list()[0];
   myPort = new Serial(this, portName, 9600);
+  
+   random = new Random();
+  
   playerPos = new Vector2(0,0);
   
   enemies = new ArrayList();
@@ -56,6 +84,9 @@ void setup() {
 }
 
 void draw() {
+  
+  UpdateTime();
+  
   background(#2b9468); // green background
   fill(fgcolor);
   
@@ -63,7 +94,31 @@ void draw() {
   ellipse(playerPos.x, playerPos.y, 40, 40);
   
   RenderEnemies();
+  
+  EnemyLogic();
+  EnemySpawner();
 }
+
+void serialEvent(Serial myPort) 
+{
+  SerialLogic(myPort);
+}
+
+
+
+
+
+
+
+// Updates the delta time 
+void UpdateTime()
+{
+  delta = millis() - lastTime;
+  lastTime = millis();
+}
+
+
+
 
 void RenderEnemies()
 {
@@ -74,18 +129,58 @@ void RenderEnemies()
 }
 
 
-void serialEvent(Serial myPort) 
+// Moves all enemies towards player 
+void EnemyLogic()
 {
-  SerialLogic(myPort);
-  
-  EnemyLogic();
-  EnemySpawner();
+   for(int i = 0; i < enemies.size(); i++)
+   {
+      Vector2 dir = playerPos.minus(enemies.get(i).position);
+      dir.normalize();
+      
+      Vector2 displacement = dir.Scale(delta * enemySpeed);
+      enemies.get(i).SetPosition(enemies.get(i).position.add(displacement));
+   }
+}
+
+// Continously spawns enemies in a burst over each timer amount 
+void EnemySpawner()
+{
+  // Met timer and makes sure don't duplicate 
+  // spawning 
+  if(millis() % timer <= 100 && (hasSpawned == false))
+  {
+     for(int i = 0; i < enemySpawnRate; i++)
+     {
+       // Create enemy 
+       SpawnEnemy();
+     }
+     
+     hasSpawned = true;
+  }
+  else if (hasSpawned == true)
+  {
+    // Reset timer once past threshold 
+    if(millis() % timer <= 100)
+    {
+      hasSpawned = false;
+    }
+  }
 }
 
 
 
-
-
+// Creates and enemy and addds it to the gameworld 
+void SpawnEnemy()
+{
+  Vector2 min = enemySpawnOrigin.minus(enemySpawnRange.Scale(0.5f));
+  Vector2 max = enemySpawnOrigin.add(enemySpawnRange.Scale(0.5f));
+  
+  Vector2 pos = new Vector2(
+    RandWithinRange(min.x, max.x), 
+    RandWithinRange(min.y, max.y));
+  
+  enemies.add(new Enemy(pos));
+}
 
 
 
@@ -134,60 +229,47 @@ void SerialLogic(Serial myPort)
 
 
 
-// Moves all enemies towards player 
-void EnemyLogic()
-{
-   for(int i = 0; i < enemies.size(); i++)
-   {
-      Vector2 dir = playerPos.minus(enemies.get(i).position);
-      dir.normalize();
-      enemies.get(i).position = enemies.get(i).position.add(dir.Scale(1.0f));
-   }
-}
-
-// Continously spawns enemies in a burst over each timer amount 
-void EnemySpawner()
-{
-  // Met timer and makes sure don't duplicate 
-  // spawning 
-  if(millis() % timer <= 100 && (hasSpawned == false))
-  {
-     for(int i = 0; i < enemySpawnRate; i++)
-     {
-       // Create enemy 
-       SpawnEnemy();
-     }
-     
-     hasSpawned = true;
-  }
-  else if (hasSpawned == true)
-  {
-    // Reset timer once past threshold 
-    if(millis() % timer <= 100)
-    {
-      hasSpawned = false;
-    }
-  }
-}
-
-
-
-// Creates and enemy and addds it to the gameworld 
-void SpawnEnemy()
-{
-  enemies.add(new Enemy(new Vector2(0,0)));
-}
-
 
 // Holds an entity position 
 public class Enemy
 {
-   public Vector2 position;
+   private Vector2 position;
+   private CircleCollider collider;
    
    Enemy(Vector2 startPos)
    {
       position = startPos;
    }
+   
+   void SetPosition(Vector2 _position)
+   {
+     position = _position;
+     collider.SetPosition(_position);
+   }
+   
+}
+
+public class CircleCollider
+{
+  float radius;
+  Vector2 position;
+  
+  CircleCollider(float _radius, Vector2 _position)
+  {
+    radius = _radius;
+    position = _position;
+  }
+  
+  void SetPosition(Vector2 _position)
+  {
+    position = _position;
+  }
+  
+  boolean isColliding(CircleCollider other)
+  {
+   Vector2 dis = position.minus(other.position);
+   return dis.GetMag() < (radius + other.radius);
+  }
 }
 
 public class Vector2
@@ -216,9 +298,14 @@ public class Vector2
     return new Vector2(x * scale, y * scale);
   }
   
+  float GetMag()
+  {
+   return  sqrt(x * x + y * y);
+  }
+  
   void normalize()
   {
-    float hyp = sqrt(x * x + y * y);
+    float hyp = GetMag();
     x /= hyp;
     y /= hyp;  //<>//
   }
@@ -227,4 +314,9 @@ public class Vector2
 float InverseLerp(float a, float b, float v)
 {
    return (v - a) / (b - a); 
+}
+
+float RandWithinRange(float min, float max)
+{
+  return random.nextFloat(max - min + 1) + min;
 }
