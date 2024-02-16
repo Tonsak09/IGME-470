@@ -79,13 +79,13 @@ void setup() {
   String portName = Serial.list()[0];
   myPort = new Serial(this, portName, 9600);
   
-   random = new Random();
+  random = new Random();
   
   playerPos = new Vector2(0,0);
   playerCollider = new CircleCollider(playerRadius, playerPos);
   
   enemies = new ArrayList();
-  enemySpawnRange = new Vector2(600, 200);
+  enemySpawnRange = new Vector2(1000, 200);
   enemySpawnOrigin = new Vector2(400, 300);
   
   // don't generate a serialEvent() until you get an ASCII newline character
