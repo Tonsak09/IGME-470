@@ -41,6 +41,7 @@ float fgcolor = 0;          // Fill color defaults to black
 Vector2 playerPos; 
 CircleCollider playerCollider;
 float playerRadius = 15.0f;
+float playerMoveSpeed = 0.5f;
 
 
 float spacing = 30; // Spacing from screen edge 
@@ -51,7 +52,7 @@ Vector2 enemySpawnRange;
 Vector2 enemySpawnOrigin;
 
 int enemySpawnRate = 3;
-float timer = 5000; // Every 10 seconds spawn 
+float timer = 2000; // Every 10 seconds spawn 
 boolean hasSpawned = false;
 
 List<Enemy> enemies; 
@@ -84,8 +85,8 @@ void setup() {
   playerCollider = new CircleCollider(playerRadius, playerPos);
   
   enemies = new ArrayList();
-  enemySpawnRange = new Vector2(100, 100);
-  enemySpawnOrigin = new Vector2(400, 500);
+  enemySpawnRange = new Vector2(600, 200);
+  enemySpawnOrigin = new Vector2(400, 300);
   
   // don't generate a serialEvent() until you get an ASCII newline character
   myPort.bufferUntil('\n');
@@ -251,7 +252,21 @@ void SerialLogic(Serial myPort)
       // assign the sensor values to xpos & ypos
       if (sensors.length > 1) {
         playerPos.x = lerp(spacing, screenSizeX - spacing, InverseLerp(0, 1023,  sensors[0]));
-        playerPos.y = (sensors[1] / 10) + spacing;
+        
+        if(sensors[1] > 100)
+        {
+          playerPos.y += playerMoveSpeed * delta;
+        }
+        else
+        {
+          playerPos.y -= playerMoveSpeed * delta;
+        }
+        
+        // Clamp player position 
+        playerPos.y = Math.max(spacing, Math.min(screenSizeY - spacing, playerPos.y));
+        
+        
+        //playerPos.y = (sensors[1] / 10) + spacing;
         // the button will send 0 or 1.
         // this converts them to 0 or 255 (black or white)
         fgcolor = sensors[2] * 255;
