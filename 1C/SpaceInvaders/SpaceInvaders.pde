@@ -39,6 +39,8 @@ Random random;
 
 float fgcolor = 0;          // Fill color defaults to black
 Vector2 playerPos; 
+CircleCollider playerCollider;
+
 
 float spacing = 30; // Spacing from screen edge 
 int screenSizeX = 800;
@@ -47,12 +49,12 @@ int screenSizeY = 600;
 Vector2 enemySpawnRange;
 Vector2 enemySpawnOrigin;
 
-int enemySpawnRate = 5;
-float timer = 10000; // Every 10 seconds spawn 
+int enemySpawnRate = 3;
+float timer = 5000; // Every 10 seconds spawn 
 boolean hasSpawned = false;
 
 List<Enemy> enemies; 
-float enemySpeed = 2.0f;
+float enemySpeed = 0.1f;
 
 
 // Time 
@@ -74,6 +76,7 @@ void setup() {
    random = new Random();
   
   playerPos = new Vector2(0,0);
+  playerCollider = new CircleCollider(40, playerPos);
   
   enemies = new ArrayList();
   enemySpawnRange = new Vector2(100, 100);
@@ -139,6 +142,11 @@ void EnemyLogic()
       
       Vector2 displacement = dir.Scale(delta * enemySpeed);
       enemies.get(i).SetPosition(enemies.get(i).position.add(displacement));
+      
+      if(enemies.get(i).IsColliding(playerCollider))
+      {
+        //println("Is Colliding");
+      }
    }
 }
 
@@ -160,7 +168,7 @@ void EnemySpawner()
   else if (hasSpawned == true)
   {
     // Reset timer once past threshold 
-    if(millis() % timer <= 100)
+    if(millis() % timer >= (timer / 2.0f))
     {
       hasSpawned = false;
     }
@@ -239,12 +247,18 @@ public class Enemy
    Enemy(Vector2 startPos)
    {
       position = startPos;
+      collider = new CircleCollider(40, startPos);
    }
    
    void SetPosition(Vector2 _position)
    {
      position = _position;
      collider.SetPosition(_position);
+   }
+   
+   boolean IsColliding(CircleCollider other)
+   {
+     return collider.isColliding(other);
    }
    
 }
