@@ -40,6 +40,7 @@ Random random;
 float fgcolor = 0;          // Fill color defaults to black
 Vector2 playerPos; 
 CircleCollider playerCollider;
+float playerRadius = 15.0f;
 
 
 float spacing = 30; // Spacing from screen edge 
@@ -55,11 +56,15 @@ boolean hasSpawned = false;
 
 List<Enemy> enemies; 
 float enemySpeed = 0.1f;
-
+float enemyRadius = 15.0f;
 
 // Time 
 float delta;
 float lastTime;
+
+float currentTime;
+int timeDisplay;
+float timeRecord; 
 
 
 boolean contact = false;    // Whether you've heard from the microcontroller
@@ -76,7 +81,7 @@ void setup() {
    random = new Random();
   
   playerPos = new Vector2(0,0);
-  playerCollider = new CircleCollider(40, playerPos);
+  playerCollider = new CircleCollider(playerRadius, playerPos);
   
   enemies = new ArrayList();
   enemySpawnRange = new Vector2(100, 100);
@@ -93,10 +98,11 @@ void draw() {
   background(#2b9468); // green background
   fill(fgcolor);
   
-  // Draw the shape
+  // Draw Player 
   ellipse(playerPos.x, playerPos.y, 40, 40);
   
   RenderEnemies();
+  DisplayScore();
   
   EnemyLogic();
   EnemySpawner();
@@ -118,8 +124,19 @@ void UpdateTime()
 {
   delta = millis() - lastTime;
   lastTime = millis();
+  
+  currentTime += delta;
 }
 
+void DisplayScore()
+{
+  timeDisplay = (int)currentTime;
+  textSize(45);
+  text(timeDisplay / 1000, 20, 50); 
+  fill(0, 408, 612);
+  text((int)timeRecord / 1000, 20, 90);
+
+}
 
 
 
@@ -145,7 +162,10 @@ void EnemyLogic()
       
       if(enemies.get(i).IsColliding(playerCollider))
       {
+        // Reset game 
         //println("Is Colliding");
+        ResetGame();
+        break;
       }
    }
 }
@@ -187,9 +207,19 @@ void SpawnEnemy()
     RandWithinRange(min.x, max.x), 
     RandWithinRange(min.y, max.y));
   
-  enemies.add(new Enemy(pos));
+  enemies.add(new Enemy(pos, enemyRadius));
 }
 
+void ResetGame()
+{
+  if(currentTime > timeRecord)
+  {
+    timeRecord = currentTime;
+  }
+  
+  currentTime = 0;
+  enemies.clear();
+}
 
 
 
@@ -244,10 +274,10 @@ public class Enemy
    private Vector2 position;
    private CircleCollider collider;
    
-   Enemy(Vector2 startPos)
+   Enemy(Vector2 startPos, float radius)
    {
       position = startPos;
-      collider = new CircleCollider(40, startPos);
+      collider = new CircleCollider(radius, startPos);
    }
    
    void SetPosition(Vector2 _position)
