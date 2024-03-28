@@ -10,33 +10,40 @@ void setup() {
 }
 
 void loop() {
+ Serial.print(analogRead(A0) );
+ Serial.print(",");
+ Serial.print(analogRead(A1) );
+ Serial.println();
+ 
   // if we get a valid byte, read the sensors
-  if (Serial.available() > 0) {
-    // read the incoming byte
-    int inByte = Serial.read();
+  // if (Serial.available() > 0) {
+  //   // read the incoming byte
+  //   int inByte = Serial.read();
   
-    // read the analog sensor
-    int sensorVal = analogRead(A0);
-    // print the results
-    Serial.print(sensorVal);
-    Serial.print(",");
+  //   // read the analog sensor
+  //   int sensorVal = analogRead(A0);
+  //   // print the results
+  //   Serial.print(sensorVal);
+  //   Serial.print(",");
   
-    // read the analog sensor
-    sensorVal = analogRead(A1);
-    // print the results
-    Serial.print(sensorVal);
-    Serial.print(",");
+  //   // read the analog sensor
+  //   sensorVal = analogRead(A1);
+  //   // print the results
+  //   Serial.print(sensorVal);
+  //   Serial.print(",");
     
-    // read the button state
-    sensorVal = digitalRead(btnPin);
-    // print the results:
-    Serial.println(sensorVal);
-  }
+  //   // // read the button state
+  //   // sensorVal = digitalRead(btnPin);
+  //   // // print the results:
+  //   // Serial.println(sensorVal);
+  // }
 }
 
 void establishContact() {
-  while (Serial.available() <= 0) {
-    Serial.println("0,0,0");   // send an initial string
-    delay(300);
-  }
+   Serial.print(Serial.available());
+
+  // while (Serial.available() <= 0) {
+  //   Serial.println("0,0,0");   // send an initial string
+  //   delay(300);
+  // }
 }
